@@ -91,3 +91,4 @@ target/
 
 # Mine
 power_plants_prediction/
+env_renewable_power_plants_pred/

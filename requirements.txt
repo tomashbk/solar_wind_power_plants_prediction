@@ -15,3 +15,5 @@ pandas
 pyhere
 urllib3
 requests
+matplotlib
+seaborn

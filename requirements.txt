@@ -17,3 +17,4 @@ urllib3
 requests
 matplotlib
 seaborn
+scikit-learn

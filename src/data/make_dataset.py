@@ -124,7 +124,7 @@ def main():
         SOUTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JUL", "AUG", "SEP"])
     
         output = r""
-        base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start=2012&end=2019&format=CSV&header=false"
+        base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start=2013&end=2019&format=CSV&header=false"
         df_response = pd.DataFrame()
     
         http = urllib3.PoolManager(

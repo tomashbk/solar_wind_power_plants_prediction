@@ -9,9 +9,26 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 
-dir_data_raw = pyhere.here().resolve().joinpath("data", "raw")
-dir_data_interim = pyhere.here().resolve().joinpath("data", "interim")
-dir_data_external = pyhere.here().resolve().joinpath("data", "external")
+"""
+Global variables
+"""
+DIR_DATA_RAW = pyhere.here().resolve().joinpath("data", "raw")
+DIR_DATA_INTERIM = pyhere.here().resolve().joinpath("data", "interim")
+DIR_DATA_EXTERNAL = pyhere.here().resolve().joinpath("data", "external")
+SEASONS = {'autumn', 'spring', 'summer', 'winter'}
+YEARS = {'2013', '2014', '2015', '2016', '2017', '2018'}
+NORTH_HEMISPHERE_MONTHS_SEASONS = dict()
+SOUTH_HEMISPHERE_MONTHS_SEASONS = dict()
+MONTHS_OF_YEAR = np.array(["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"])
+NORTH_HEMISPHERE_MONTHS_SEASONS["autumn"] = np.array(["OCT", "NOV", "DEC"])
+NORTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JAN", "FEB", "MAR"])
+NORTH_HEMISPHERE_MONTHS_SEASONS["spring"] = np.array(["APR", "MAY", "JUN"])
+NORTH_HEMISPHERE_MONTHS_SEASONS["summer"] = np.array(["JUL", "AUG", "SEP"])
+SOUTH_HEMISPHERE_MONTHS_SEASONS["spring"] = np.array(["OCT", "NOV", "DEC"])
+SOUTH_HEMISPHERE_MONTHS_SEASONS["summer"] = np.array(["JAN", "FEB", "MAR"])
+SOUTH_HEMISPHERE_MONTHS_SEASONS["autumn"] = np.array(["APR", "MAY", "JUN"])
+SOUTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JUL", "AUG", "SEP"])
+
 
 def make_mi_scores(X, y):
     mi_scores = mutual_info_classif(X, y)

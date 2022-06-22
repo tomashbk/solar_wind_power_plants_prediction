@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import click
 import logging
-from pathlib import Path
+import src.utils as utils
 # from dotenv import find_dotenv, load_dotenv
 import os, json, requests
 from io import StringIO
@@ -21,11 +21,8 @@ def main():
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
     
-    dir_data_raw = pyhere.here().resolve().joinpath("data", "raw")
-    dir_data_interim = pyhere.here().resolve().joinpath("data", "interim")
-    dir_data_external = pyhere.here().resolve().joinpath("data", "external")
 
-    csv_power_plants = pd.read_csv(dir_data_interim/"power_plants_with_generation_transformed.csv", index_col=[0])
+    csv_power_plants = pd.read_csv(utils.DIR_DATA_INTERIM/"power_plants_with_generation_transformed.csv", index_col=[0])
     max_index_csv_power_plants = len(csv_power_plants.index)
 
     # TQV                   MERRA-2 Total Column Precipitable Water (kg m-2) 
@@ -92,7 +89,7 @@ def main():
                     ]
     while index_reference + rows_chunk <= (max_index_csv_power_plants - 1):
         try:
-            df_transformed_data_combined_with_nasa = pd.read_csv(dir_data_external/"v5_transformed_data_combined_with_nasa.csv", index_col=['index'] )
+            df_transformed_data_combined_with_nasa = pd.read_csv(utils.DIR_DATA_EXTERNAL/"v5_transformed_data_combined_with_nasa.csv", index_col=['index'] )
             index_reference = df_transformed_data_combined_with_nasa.index.max() + 1
         except FileNotFoundError: 
             pass
@@ -110,17 +107,7 @@ def main():
     
         locations = list(sample_lat_lon.to_records(index=False))
     
-        NORTH_HEMISPHERE_MONTHS_SEASONS = dict()
-        SOUTH_HEMISPHERE_MONTHS_SEASONS = dict()
-        MONTHS_OF_YEAR = np.array(["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"])
-        NORTH_HEMISPHERE_MONTHS_SEASONS["autumn"] = np.array(["OCT", "NOV", "DEC"])
-        NORTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JAN", "FEB", "MAR"])
-        NORTH_HEMISPHERE_MONTHS_SEASONS["spring"] = np.array(["APR", "MAY", "JUN"])
-        NORTH_HEMISPHERE_MONTHS_SEASONS["summer"] = np.array(["JUL", "AUG", "SEP"])
-        SOUTH_HEMISPHERE_MONTHS_SEASONS["spring"] = np.array(["OCT", "NOV", "DEC"])
-        SOUTH_HEMISPHERE_MONTHS_SEASONS["summer"] = np.array(["JAN", "FEB", "MAR"])
-        SOUTH_HEMISPHERE_MONTHS_SEASONS["autumn"] = np.array(["APR", "MAY", "JUN"])
-        SOUTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JUL", "AUG", "SEP"])
+       
     
         output = r""
         base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start=2013&end=2019&format=CSV&header=false"
@@ -143,13 +130,13 @@ def main():
             df_response_aux["longitude"] = longitude
             # print(df_response_aux)
             if longitude > 0:
-                hemisphere_months_seasons = NORTH_HEMISPHERE_MONTHS_SEASONS
+                hemisphere_months_seasons = utils.NORTH_HEMISPHERE_MONTHS_SEASONS
             else:
-                hemisphere_months_seasons = SOUTH_HEMISPHERE_MONTHS_SEASONS
+                hemisphere_months_seasons = utils.SOUTH_HEMISPHERE_MONTHS_SEASONS
             for index, element in hemisphere_months_seasons.items():
                 df_response_aux[index]= df_response_aux[element].mean(axis=1)
     
-            df_response_aux.drop(columns= MONTHS_OF_YEAR, inplace = True)
+            df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
     
             df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
             df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
@@ -177,7 +164,7 @@ def main():
         except NameError:
             pass
         
-        df_response.to_csv(dir_data_external/filename, index_label='index')
+        df_response.to_csv(utils.DIR_DATA_EXTERNAL/filename, index_label='index')
         del df_response
         del df_response_aux
         print("Sleeping...")

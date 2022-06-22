@@ -27,11 +27,7 @@ def main():
 
     csv_power_plants = pd.read_csv(dir_data_interim/"power_plants_with_generation_transformed.csv", index_col=[0])
     max_index_csv_power_plants = len(csv_power_plants.index)
-    '''
-    *Version: 2.0 Published: 2021/03/09* Source: [NASA POWER](https://power.larc.nasa.gov/)
-    POWER API Multi-Point Download
-    This is an overview of the process to request data from multiple data points from the POWER API.
-    '''
+
     # TQV                   MERRA-2 Total Column Precipitable Water (kg m-2) 
     # WS10M                 MERRA-2 Wind Speed at 10 Meters (m/s) 
     # CLRSKY_SFC_SW_DNI     CERES SYN1deg Clear Sky Surface Shortwave Downward Direct Normal Irradiance (kW-hr/m^2/day) 
@@ -62,6 +58,8 @@ def main():
     # CLRSKY_SFC_SW_DIFF    Clear Sky Surface Shortwave Downward Diffuse Horizontal Irradiance
     # CLRSKY_SFC_SW_DNI     Clear Sky Surface Shortwave Downward Direct Normal Irradiance
     # CLRSKY_SFC_SW_UP      Clear Sky Surface Shortwave Upward Irradiance
+
+    # T2M                   Temperature at 2 Meters
     import os, json, requests
     from io import StringIO
     import certifi
@@ -89,11 +87,12 @@ def main():
                         "WS50M",
                         "WS50M_RANGE_AVG",
                         "WS10M",
-                        "WS10M_RANGE_AVG"
+                        "WS10M_RANGE_AVG",
+                        "T2M"
                     ]
     while index_reference + rows_chunk <= (max_index_csv_power_plants - 1):
         try:
-            df_transformed_data_combined_with_nasa = pd.read_csv(dir_data_external/"v3_transformed_data_combined_with_nasa.csv", index_col=['index'] )
+            df_transformed_data_combined_with_nasa = pd.read_csv(dir_data_external/"v5_transformed_data_combined_with_nasa.csv", index_col=['index'] )
             index_reference = df_transformed_data_combined_with_nasa.index.max() + 1
         except FileNotFoundError: 
             pass
@@ -134,7 +133,7 @@ def main():
     
         aux_counter_index = index_reference
     
-        filename_template = "v3_transformed_data_combined_with_nasa.csv"
+        filename_template = "v5_transformed_data_combined_with_nasa.csv"
         filename = filename_template
         for latitude, longitude in locations:
             api_request_url = base_url.format(longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters))
@@ -186,12 +185,5 @@ def main():
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
-
-    # # not used in this stub but often useful for finding various files
-    # project_dir = Path(__file__).resolve().parents[2]
-
-    # # find .env automagically by walking up directories until it's found, then
-    # # load up the .env entries as environment variables
-    # load_dotenv(find_dotenv())
 
     main()

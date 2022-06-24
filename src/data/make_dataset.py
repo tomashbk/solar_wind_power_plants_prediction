@@ -1,7 +1,11 @@
-# -*- coding: utf-8 -*-
+import pyhere
+import sys
+sys.path.insert(0, str(pyhere.here().resolve().joinpath("src")))
+import utils
+
 import click
 import logging
-import src.utils as utils
+
 # from dotenv import find_dotenv, load_dotenv
 import os, json, requests
 from io import StringIO

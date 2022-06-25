@@ -19,15 +19,20 @@ import pyhere
 # @click.argument('input_filepath', type=click.Path(exists=True))
 # @click.argument('output_filepath', type=click.Path())
 def main():
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
+    """
+    1. Fetch climatic factors of the POWER NASA API given a Latitude and Longitude and a range of years.
+    2. The data fetched is concatenated with some parameters of the Global Power Database data previously obtained from World Resources Institute (and previously manipulated too).
+    3. The concatenation is done where the indexes match.
+    4. In each chunk iteration overwrites a final csv file that at the end of the process results in a final csv to start working for creating models. 
     """
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('Making final data set from raw data')
     
 
     csv_power_plants = pd.read_csv(utils.DIR_DATA_INTERIM/"power_plants_with_generation_transformed.csv", index_col=[0])
     max_index_csv_power_plants = len(csv_power_plants.index)
+
+    # POWER NASA PARAMETERS THAT WERE CONSIDERED TO FETCH:
 
     # TQV                   MERRA-2 Total Column Precipitable Water (kg m-2) 
     # WS10M                 MERRA-2 Wind Speed at 10 Meters (m/s) 
@@ -61,6 +66,7 @@ def main():
     # CLRSKY_SFC_SW_UP      Clear Sky Surface Shortwave Upward Irradiance
 
     # T2M                   Temperature at 2 Meters
+    
     import os, json, requests
     from io import StringIO
     import certifi

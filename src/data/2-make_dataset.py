@@ -21,9 +21,10 @@ import pyhere
 def main():
     """
     1. Fetch climatic factors of the POWER NASA API given a Latitude and Longitude and a range of years.
-    2. The data fetched is concatenated with some parameters of the Global Power Database data previously obtained from World Resources Institute (and previously manipulated too).
-    3. The concatenation is done where the indexes match.
-    4. In each chunk iteration overwrites a final csv file that at the end of the process results in a final csv to start working for creating models. 
+    2. The data fetched comes divided in months, so it is grouped by seasons to be consisten between regions from North and South hemispheres.
+    3. The data is concatenated with some parameters of the Global Power Database data previously obtained from World Resources Institute (and previously manipulated too).
+    4. The concatenation is done where the indexes match.
+    5. In each chunk iteration overwrites a final csv file that at the end of the process results in a final csv to start working for creating models. 
     """
     logger = logging.getLogger(__name__)
     logger.info('Making final data set from raw data')
@@ -147,7 +148,8 @@ def main():
                 df_response_aux[index]= df_response_aux[element].mean(axis=1)
     
             df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
-    
+
+            # "PIVAT! PIVAT! PIVAT!"
             df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
             df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
     

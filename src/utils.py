@@ -7,8 +7,8 @@ import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
-
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, classification_report
+from sklearn.model_selection import cross_val_score, StratifiedKFold
 
 # GLOBAL VARIABLES
 DIR_DATA_RAW = pyhere.here().resolve().joinpath("data", "raw")
@@ -104,3 +104,30 @@ def correlation_matrix(df: pd.DataFrame):
     # PLOT THE MATRIX
     _ = sns.heatmap(matrix, mask=mask, center=0, annot=True,
              fmt='.2f', square=True, cmap=cmap, ax=ax)
+
+def balancing_data_more_than_1000(dataframe, target_column):
+    """
+    Function to balance data if the target with less samples is more than 1000.
+    """
+    target_with_less_value = dataframe[[target_column]].value_counts().sort_values().index[0][0]
+    value_of_target_with_less_value = dataframe[[target_column]].value_counts().sort_values()[0]
+    dict_outbalanced_targets_values = dataframe[[target_column]].value_counts().sort_values()[1:].to_dict()
+
+    dict_outbalanced_targets_values
+    if(value_of_target_with_less_value > 1000):
+        for key_tuple, value in dict_outbalanced_targets_values.items():
+            difference = (value - value_of_target_with_less_value)
+            index_rows_to_delete = dataframe[dataframe[target_column] == key_tuple[0]].sample(difference).index
+            dataframe.drop(index_rows_to_delete, axis = 0, inplace = True)
+
+def custom_classification_prediction_report(model, X, y, X_test, y_test, list_target_in_order):
+
+    y_pred = model.predict(X_test)
+    print(f'{np.around(model.score(X_test, y_test) * 100, 2)}%')
+    # If data is unordered in nature (i.e. non - Time series) then shuffle = True is right choice.
+    results_cvs = cross_val_score(model, X, y, cv=StratifiedKFold(shuffle = True))
+    print(f'{np.around(results_cvs * 100, 2)}(%)')
+    print(f'Mean: {np.around(results_cvs.mean() * 100, 2)}%, Standard Deviation: {np.around(results_cvs.std() * 100, 2)}%')
+    print(classification_report(y_test, y_pred, target_names=list_target_in_order))
+    confusion_matrix_return = confusion_matrix(y_test, y_pred)
+    sns.heatmap(confusion_matrix_return, annot=True, fmt = 'g')

@@ -1,4 +1,4 @@
-Renewable Power Plants Prediction
+Solar PV and Wind Power Plants Prediction
 ==============================
 A web application to predict if a certain location in the world is convenient or not to install a Solar PV or Wind Power Plant according to the climatic factors of that location.
 

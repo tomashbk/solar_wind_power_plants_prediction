@@ -10,10 +10,17 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, classification_report
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 
+import certifi
+import urllib3
+import os, json, requests
+from io import StringIO
+
 # GLOBAL VARIABLES
 DIR_DATA_RAW = pyhere.here().resolve().joinpath("data", "raw")
 DIR_DATA_INTERIM = pyhere.here().resolve().joinpath("data", "interim")
 DIR_DATA_EXTERNAL = pyhere.here().resolve().joinpath("data", "external")
+DIR_DATA_PROCESSED = pyhere.here().resolve().joinpath("data", "processed")
+DIR_MODELS = pyhere.here().resolve().joinpath("models")
 SEASONS = {'autumn', 'spring', 'summer', 'winter'}
 YEARS = {'2013', '2014', '2015', '2016', '2017', '2018'}
 NORTH_HEMISPHERE_MONTHS_SEASONS = {
@@ -121,7 +128,10 @@ def balancing_data_more_than_1000(dataframe, target_column):
             dataframe.drop(index_rows_to_delete, axis = 0, inplace = True)
 
 def custom_classification_prediction_report(model, X, y, X_test, y_test, list_target_in_order):
-
+    """
+    Function to show a custom report of a classification prediction.
+    It includes the accuracy score, a cross validation score, the classification_report from sklearn, and a Confusion Matrix.
+    """
     y_pred = model.predict(X_test)
     print(f'{np.around(model.score(X_test, y_test) * 100, 2)}%')
     # If data is unordered in nature (i.e. non - Time series) then shuffle = True is right choice.
@@ -131,3 +141,132 @@ def custom_classification_prediction_report(model, X, y, X_test, y_test, list_ta
     print(classification_report(y_test, y_pred, target_names=list_target_in_order))
     confusion_matrix_return = confusion_matrix(y_test, y_pred)
     sns.heatmap(confusion_matrix_return, annot=True, fmt = 'g')
+
+def calculate_feature_mean_std(X):
+    climate_features = {"ALLSKY_SFC_SW_DWN",
+                        "CLRSKY_SFC_SW_DWN",
+                        # "ALLSKY_SFC_SW_DIFF",
+                        # "ALLSKY_SFC_SW_UP",
+                        "ALLSKY_SFC_LW_DWN",
+                        "ALLSKY_SFC_LW_UP",
+                        "ALLSKY_SFC_SW_DNI",
+                        # "ALLSKY_SFC_SW_DNI_MAX_RD",
+                        # "ALLSKY_SFC_SW_UP_MAX",
+                        # "CLRSKY_SFC_SW_DIFF",
+                        "CLRSKY_SFC_SW_DNI",
+                        # "CLRSKY_SFC_SW_UP",
+                        #"ALLSKY_KT",
+                        "WS10M_MAX_AVG",
+                        "WS50M_MAX_AVG",
+                        "WS50M",
+                        # "WS50M_RANGE_AVG",
+                        "WS10M",
+                        "T2M",
+                        # "WS10M_RANGE_AVG"
+                    }   
+
+    list_total = []
+    for feature in climate_features:
+        feature_string = ""
+        
+        for season in SEASONS:
+            dict_features_to_apply_mean = {}
+            list_to_append = []
+            for year in YEARS:
+                feature_string = f"{season}_{feature}_{year}"
+                
+                list_to_append.append(feature_string)
+            dict_features_to_apply_mean = {f"{season}_{feature}": list_to_append}
+        
+            list_total.append(dict_features_to_apply_mean)
+    for dict_season_feature in list_total:
+        for season_feature in dict_season_feature:
+            X[f'mean_{season_feature}']= X[dict_season_feature[season_feature]].mean(axis=1)
+            X[f'std_{season_feature}']= X[dict_season_feature[season_feature]].std(axis=1)
+    
+
+
+def fetch_data_latitude_longitude(latitude, longitude):
+
+    
+    url_parameters = ["ALLSKY_SFC_SW_DWN",
+                        "CLRSKY_SFC_SW_DWN",
+                        "ALLSKY_SFC_SW_DIFF",
+                        "ALLSKY_SFC_SW_UP",
+                        "ALLSKY_SFC_LW_DWN",
+                        "ALLSKY_SFC_LW_UP",
+                        "ALLSKY_SFC_SW_DNI",
+                        # "ALLSKY_SFC_SW_DNI_MAX_RD",
+                        "ALLSKY_SFC_SW_UP_MAX",
+                        "CLRSKY_SFC_SW_DIFF",
+                        "CLRSKY_SFC_SW_DNI",
+                        "CLRSKY_SFC_SW_UP",
+                        #"ALLSKY_KT",
+                        "WS10M_MAX_AVG",
+                        "WS50M_MAX_AVG",
+                        "WS50M",
+                        "WS50M_RANGE_AVG",
+                        "WS10M",
+                        "WS10M_RANGE_AVG",
+                        "T2M"
+                    ]
+    # columns_to_drop = [
+    #                     'capacity_mw',
+    #                     'latitude',
+    #                     'longitude',
+    #                     'primary_fuel_transformed',
+    #                     'generation_gwh_2013',
+    #                     'generation_gwh_2014',
+    #                     'generation_gwh_2015',
+    #                     'generation_gwh_2016',
+    #                     'generation_gwh_2017',
+    #                     'generation_gwh_2018',
+    #                     'generation_gwh_2019'
+    #                 ]
+
+    base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start=2013&end=2019&format=CSV&header=false"
+    df_response = pd.DataFrame()
+
+    http = urllib3.PoolManager(
+        cert_reqs='CERT_REQUIRED',
+        ca_certs=certifi.where()
+    )
+
+    api_request_url = base_url.format(longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters))
+    response = http.request('GET', api_request_url, timeout=30.00).data.decode('utf-8')
+    df_response_aux = pd.read_csv(StringIO(response))
+    df_response_aux["latitude"] = latitude
+    df_response_aux["longitude"] = longitude
+    # print(df_response_aux)
+    if longitude > 0:
+        hemisphere_months_seasons = NORTH_HEMISPHERE_MONTHS_SEASONS
+    else:
+        hemisphere_months_seasons = SOUTH_HEMISPHERE_MONTHS_SEASONS
+    for index, element in hemisphere_months_seasons.items():
+        df_response_aux[index]= df_response_aux[element].mean(axis=1)
+
+    df_response_aux.drop(columns= MONTHS_OF_YEAR, inplace = True)
+
+    # "PIVAT! PIVAT! PIVAT!"
+    df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
+    df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
+
+    if(df_response.empty):
+    
+        df_response = df_response_aux.copy()
+    else:
+        df_response = pd.concat([df_response,df_response_aux])
+
+
+
+    df_response.reset_index(inplace = True)
+    
+    
+    calculate_feature_mean_std(df_response)
+
+    columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude') | df_response.columns.str.contains('2019') | df_response.columns.str.contains('2012') | df_response.columns.str.contains('2013') | df_response.columns.str.contains('2014') | df_response.columns.str.contains('2015') | df_response.columns.str.contains('2016') | df_response.columns.str.contains('2017') | df_response.columns.str.contains('2018') |  df_response.columns.str.contains('ANN') |  df_response.columns.str.contains('LW') |  df_response.columns.str.contains('WS10') | df_response.columns.str.contains('MAX')                  
+    
+    df_response = df_response.loc[:,~columns_delete]
+    df_response = df_response.reindex(sorted(df_response.columns), axis=1)
+    return df_response
+

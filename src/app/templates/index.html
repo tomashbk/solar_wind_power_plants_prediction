@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Demo</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+            integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+            crossorigin=""/>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+                integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+                crossorigin=""></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        * {
+        /* margin: 10;
+        padding: 10; */
+        border: none;
+        font-family: Arial, sans-serif;
+        }
+
+        body {
+        font-size: 14px;
+        }
+        #map { width: 600px; height: 600px; text-align: center; float:left;}
+        #results{float: left; margin: 50px;}
+    </style>
+    <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'> -->
+    <!-- <script src='main.js'></script> -->
+</head>
+<body>
+    <div id="map"></div>
+    <!-- <form action="predict" method="get">
+        <input type="text" name="latitude" value="{{latitude}}">
+        <input type="text" name="longitude" value="{{longitude}}">
+        <input type="submit">
+    </form> -->
+    <div id="results">
+        
+        <p><strong>Lat: </strong><span id="lat_elem"></span></p>
+        <p><strong>Lng: </strong><span id="lng_elem"></span></p>
+        <p><strong>Prediction: </strong><span id="pred_elem"></span></p>
+    </div>
+    
+    
+    <script>
+        var lat_elem = document.querySelector('#lat_elem');
+        var lng_elem = document.querySelector('#lng_elem');
+        var pred_elem= document.querySelector('#pred_elem');
+        var marker = null;
+
+        var map = L.map('map', {
+            center: [-40, -65],
+            zoom: 4
+        });
+    
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        map.addEventListener('click', function(ev) {
+            lat = ev.latlng.lat;
+            lng = ev.latlng.lng;
+            if (marker !== null) {
+                map.removeLayer(marker);
+            }            
+            marker = L.marker([lat, lng]).addTo(map);
+            data= { 
+                    'latitude': lat.toFixed(4),
+                    'longitude': lng.toFixed(4)
+             };
+            console.log(data);
+            
+            // AJAX
+            $.ajax('/predict', {
+                type: 'POST',  // http method
+                data: data,  // data to submit
+                beforeSend: function() {
+                    pred_elem.innerHTML = "Processing..."
+                },
+                success: function (response, status, xhr) {
+                    pred_elem.innerHTML = response
+                    // $('p').append('status: ' + status + ', data: ' + data);
+                },
+                error: function (jqXhr, textStatus, errorMessage) {
+                        $('p').append('Error' + errorMessage);
+                }
+            });
+        });
+        map.addEventListener('mousemove', function(ev) {        
+            lat_elem.innerHTML = ev.latlng.lat.toFixed(4);
+            lng_elem.innerHTML = ev.latlng.lng.toFixed(4);
+        });
+
+
+        
+        // document.getElementById("map").addEventListener("contextmenu", function (event) {
+        //     // Prevent the browser's context menu from appearing
+        //     event.preventDefault();
+
+        //     // Add marker
+        //     L.marker([lat, lng]).addTo(map);
+        //     alert(lat + ' - ' + lng);
+
+        //     return false; // To disable default popup.
+        // });        
+    </script>
+</body>
+</html>

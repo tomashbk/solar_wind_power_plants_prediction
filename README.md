@@ -3,13 +3,13 @@ Solar PV and Wind Power Plants Prediction
 
 (This is still a work in progress. However, at this stage of the development it is already functional).
 
-A web application to predict if a certain location in the world is convenient or not to install a Solar PV or Wind Power Plant according to the climatic factors of that location.
+A web application to predict if a certain location in the World is convenient or not to install a Solar PV or Wind Power Plant according to climatic factors of that location.
 
 ![Map Solar USA](/reports/figures/img_readme/usa_solar.jpg)
 
 ![Map Wind Arg](/reports/figures/img_readme/arg_wind.jpg)
 
-The dataset used to train the model is the **Global Power Plant Database** from **World Resources Institute** (https://www.wri.org/) in combination of data from **NASA Prediction Of Wordlwide Energy Resources (POWER)** (https://power.larc.nasa.gov/).
+The dataset used to train the model is the **Global Power Plant Database** from **World Resources Institute** (https://www.wri.org/) in combination of data from **NASA Prediction Of Worldwide Energy Resources (POWER)** (https://power.larc.nasa.gov/).
 
 The algorithm chosen for it had the best accuracy of all tried is a XGBoost Classifier.
 

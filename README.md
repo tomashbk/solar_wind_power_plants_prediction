@@ -1,5 +1,8 @@
 Solar PV and Wind Power Plants Prediction
 ==============================
+
+(This is still a work in progress. However, at this stage of the development it is already functional).
+
 A web application to predict if a certain location in the world is convenient or not to install a Solar PV or Wind Power Plant according to the climatic factors of that location.
 
 ![Map Solar USA](/reports/figures/img_readme/usa_solar.jpg)

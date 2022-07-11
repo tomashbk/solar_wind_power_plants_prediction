@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.feature_selection import mutual_info_classif
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, classification_report
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 
@@ -46,49 +46,68 @@ MONTHS_OF_YEAR = np.array(["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG
 # SOUTH_HEMISPHERE_MONTHS_SEASONS["winter"] = np.array(["JUL", "AUG", "SEP"])
 
 
-def make_mi_scores(X, y):
+def make_mi_scores(X, y, type):
     """
     Function to calculate Mutual Information scores.
     """
-    mi_scores = mutual_info_classif(X, y)
+    if type == "classifier":
+        mi_scores = mutual_info_classif(X, y)
+    if type == "regression":
+        mi_scores = mutual_info_regression(X, y)
+
     mi_scores = pd.Series(mi_scores, name="MI Scores", index=X.columns)
     mi_scores = mi_scores.sort_values(ascending=False)
     return mi_scores
 
-def get_accuracy(max_leaf_nodes, X_train, X_test, y_train, y_test):
+def get_accuracy_tree(type, max_leaf_nodes, X_train, X_test, y_train, y_test):
     """
     Function to calculate the Accuracy of different 
-    Decision Tree Classifiers given a number of max_leaf_nodes.
+    Decision Tree given a number of max_leaf_nodes.
     """
-    model = DecisionTreeClassifier(max_leaf_nodes = max_leaf_nodes, random_state=0)
-    model.fit(X_train, y_train)
-    preds_val = model.predict(X_test)
-    accuracy = accuracy_score(y_test, preds_val)
+    if type == "classifier":
+        model = DecisionTreeClassifier(max_leaf_nodes = max_leaf_nodes, random_state=0)
+        model.fit(X_train, y_train)
+        preds_val = model.predict(X_test)
+        score = accuracy_score(y_test, preds_val)
+    if type == "regression":
+        model = DecisionTreeRegressor(max_leaf_nodes = max_leaf_nodes, random_state=0)
+        model.fit(X_train, y_train)
+        # preds_val = model.predict(X_test)
+        score = model.score(X_test, y_test)
+    
 
-    return accuracy
+    return score
 
-def get_accuracy_knn(n_neighbors, X_train, X_test, y_train, y_test):
+def get_accuracy_knn(type, n_neighbors, X_train, X_test, y_train, y_test):
     """
     Function to calculate the Accuracy of different 
-    Decision Tree Classifiers given a number of max_leaf_nodes.
+    KNN given a number of n_neighbors.
     """
-    model = KNeighborsClassifier(n_neighbors = n_neighbors)
-    model.fit(X_train, y_train)
-    preds_val = model.predict(X_test)
-    accuracy = accuracy_score(y_test, preds_val)
+    if type == "classifier":
+        model = KNeighborsClassifier(n_neighbors = n_neighbors)
+        model.fit(X_train, y_train)
+        preds_val = model.predict(X_test)
+        score = accuracy_score(y_test, preds_val)
+    if type == "regression":
+        model = KNeighborsRegressor(n_neighbors = n_neighbors)
+        model.fit(X_train, y_train)
+        # preds_val = model.predict(X_test)
+        score = model.score(X_test, y_test)
 
-    return accuracy
+    
 
-def plot_mi_scores(scores):
+    return score
+
+def plot_scores(scores, title):
     """
-    Function to plot Mutual Information scores.
+    Function to plot Scores.
     """
     scores = scores.sort_values(ascending=True)
     width = np.arange(len(scores))
     ticks = list(scores.index)
     plt.barh(width, scores)
     plt.yticks(width, ticks)
-    plt.title("Mutual Information Scores")
+    plt.title(title)
 
 
 def correlation_matrix(df: pd.DataFrame):

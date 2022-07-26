@@ -106,7 +106,7 @@
         <p><strong>Prediction: </strong><span id="pred_elem"></span></p>
 
         <div class="slidecontainer">
-            <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+            <input type="range" min="1" max="20" value="1" id="myRange">
         </div>
         
         <div id="capacity_mw"></div>
@@ -176,15 +176,15 @@
         button_predict_reg.addEventListener('click', function(ev) {
             lat = parseFloat(lat_elem.innerHTML);
             lng = parseFloat(lng_elem.innerHTML);
-            capacity_mw = capacity_mw.innerHTML;
-            if (marker !== null) {
-                map.removeLayer(marker);
-            }            
-            marker = L.marker([lat, lng]).addTo(map);
+            capacity_mw_value = capacity_mw.innerHTML;
+            // if (marker !== null) {
+            //     map.removeLayer(marker);
+            // }            
+            // marker = L.marker([lat, lng]).addTo(map);
             data= { 
                     'latitude': lat.toFixed(4),
                     'longitude': lng.toFixed(4),
-                    'capacity_mw': capacity_mw,
+                    'capacity_mw': capacity_mw_value,
                     'type': 'regression'
              };
             console.log(data);

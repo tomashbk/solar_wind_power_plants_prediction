@@ -14,6 +14,7 @@ import certifi
 import urllib3
 import os, json, requests
 from io import StringIO
+import datetime
 
 # GLOBAL VARIABLES
 DIR_DATA_RAW = pyhere.here().resolve().joinpath("data", "raw")
@@ -205,7 +206,7 @@ def calculate_feature_mean_std(X):
     
 
 
-def fetch_data_latitude_longitude(latitude, longitude):
+def fetch_data_latitude_longitude_for_classification(latitude, longitude):
 
     
     url_parameters = ["ALLSKY_SFC_SW_DWN",
@@ -284,6 +285,77 @@ def fetch_data_latitude_longitude(latitude, longitude):
     calculate_feature_mean_std(df_response)
 
     columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude') | df_response.columns.str.contains('2019') | df_response.columns.str.contains('2012') | df_response.columns.str.contains('2013') | df_response.columns.str.contains('2014') | df_response.columns.str.contains('2015') | df_response.columns.str.contains('2016') | df_response.columns.str.contains('2017') | df_response.columns.str.contains('2018') |  df_response.columns.str.contains('ANN') |  df_response.columns.str.contains('LW') |  df_response.columns.str.contains('WS10') | df_response.columns.str.contains('MAX')                  
+    
+    df_response = df_response.loc[:,~columns_delete]
+    df_response = df_response.reindex(sorted(df_response.columns), axis=1)
+    return df_response
+
+
+def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw):
+    year_to_fetch_data = datetime.datetime.now().year-1
+    
+    url_parameters = ["ALLSKY_SFC_SW_DWN",
+                        "CLRSKY_SFC_SW_DWN",
+                    ]
+    # columns_to_drop = [
+    #                     'capacity_mw',
+    #                     'latitude',
+    #                     'longitude',
+    #                     'primary_fuel_transformed',
+    #                     'generation_gwh_2013',
+    #                     'generation_gwh_2014',
+    #                     'generation_gwh_2015',
+    #                     'generation_gwh_2016',
+    #                     'generation_gwh_2017',
+    #                     'generation_gwh_2018',
+    #                     'generation_gwh_2019'
+    #                 ]
+
+    base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start={year_to_fetch_data}&end={year_to_fetch_data}&format=CSV&header=false"
+    df_response = pd.DataFrame()
+
+    http = urllib3.PoolManager(
+        cert_reqs='CERT_REQUIRED',
+        ca_certs=certifi.where()
+    )
+
+    api_request_url = base_url.format(longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters), year_to_fetch_data=year_to_fetch_data)
+    response = http.request('GET', api_request_url, timeout=30.00).data.decode('utf-8')
+    df_response_aux = pd.read_csv(StringIO(response))
+    df_response_aux["latitude"] = latitude
+    df_response_aux["longitude"] = longitude
+    # print(df_response_aux)
+    if longitude > 0:
+        hemisphere_months_seasons = NORTH_HEMISPHERE_MONTHS_SEASONS
+    else:
+        hemisphere_months_seasons = SOUTH_HEMISPHERE_MONTHS_SEASONS
+    for index, element in hemisphere_months_seasons.items():
+        df_response_aux[index]= df_response_aux[element].mean(axis=1)
+
+    df_response_aux.drop(columns= MONTHS_OF_YEAR, inplace = True)
+
+    # "PIVAT! PIVAT! PIVAT!"
+    df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
+    df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
+
+    if(df_response.empty):
+    
+        df_response = df_response_aux.copy()
+    else:
+        df_response = pd.concat([df_response,df_response_aux])
+
+
+
+    df_response.reset_index(inplace = True)
+    
+    
+    # calculate_feature_mean_std(df_response)
+    dict_columns_rename = {a:a.replace(f'_{year_to_fetch_data}', '') for a in df_response.columns}
+    df_response.rename(columns=dict_columns_rename, inplace=True)
+    
+    df_response['capacity_mw'] = capacity_mw
+
+    columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude')
     
     df_response = df_response.loc[:,~columns_delete]
     df_response = df_response.reindex(sorted(df_response.columns), axis=1)

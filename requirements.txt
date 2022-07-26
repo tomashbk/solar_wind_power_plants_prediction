@@ -20,3 +20,4 @@ seaborn
 scikit-learn
 xgboost
 flask
+statsmodels

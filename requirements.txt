@@ -21,3 +21,4 @@ scikit-learn
 xgboost
 flask
 statsmodels
+mapie

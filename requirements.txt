@@ -22,3 +22,4 @@ xgboost
 flask
 statsmodels
 mapie
+lightgbm

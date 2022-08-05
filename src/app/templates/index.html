@@ -67,7 +67,7 @@
         }
         .button {
             border: none;
-            color: white;
+            color: black;
             padding: 16px 32px;
             text-align: center;
             text-decoration: none;
@@ -78,15 +78,30 @@
             cursor: pointer;
         }
 
-        .button {
-            background-color: white; 
+        .button_solar {
+            background-color: #f5c800;
             color: black; 
-            border: 2px solid #1915f7;
+            /* border: 2px solid #dcf500; */
         }
 
-        .button:hover {
-            background-color: #1915f7;
-            color: white;
+        .button_solar:hover {
+            background-color: #fff1b1;
+            color: black;
+        }
+
+        .button_wind {
+            background-color: #64FFFF;
+            color: black; 
+            /* border: 2px solid #dcf500; */
+        }
+
+        .button_wind:hover {
+            background-color: #c5ffff;
+            color: black;
+        }
+
+        #regression_section{
+            visibility: hidden;
         }
     </style>
     <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'> -->
@@ -101,17 +116,19 @@
     </form> -->
     <div id="results">
         
-        <p><strong>Lat: </strong><span id="lat_elem"></span></p>
-        <p><strong>Lng: </strong><span id="lng_elem"></span></p>
+        <p><strong>Lat: </strong><span id="lat_elem"></span><span id="lat_pinned"></span></p>
+        <p><strong>Lng: </strong><span id="lng_elem"></span><span id="lng_pinned"></span></p>
         <p><strong>Prediction: </strong><span id="pred_elem"></span></p>
 
-        <div class="slidecontainer">
-            <input type="range" min="1" max="20" value="1" id="myRange">
+        <div id="regression_section">
+            <div class="slidecontainer">
+                <input type="range" min="1" max="50" value="1" id="myRange">
+            </div>
+            
+            <div id="capacity_mw"></div>
+            <button id="button_predict_reg" class="button" type="submit">Predict estimated generation</button>
+            <p><strong>Prediction: </strong><span id="pred_elem2"></span></p>
         </div>
-        
-        <div id="capacity_mw"></div>
-        <button id="button_predict_reg" class="button" type="submit">Predict estimated generation</button>
-        <p><strong>Prediction: </strong><span id="pred_elem2"></span></p>
     </div>
     
 
@@ -121,12 +138,38 @@
     <script>
         var lat_elem = document.querySelector('#lat_elem');
         var lng_elem = document.querySelector('#lng_elem');
+        var lat_pinned = document.querySelector('#lat_pinned');
+        var lng_pinned = document.querySelector('#lng_pinned');
         var pred_elem= document.querySelector('#pred_elem');
         var pred_elem2= document.querySelector('#pred_elem2');
+        var regression_section= document.querySelector('#regression_section');
         var marker = null;
         var button_predict_reg = document.querySelector('#button_predict_reg');
         var slider = document.querySelector('#myRange');
         var capacity_mw = document.querySelector('#capacity_mw');
+
+        observer_class_pred = new MutationObserver(function(mutationsList, observer) {
+            console.log(mutationsList);
+            console.log(observer);
+            if (pred_elem.innerHTML == 'Other') {
+                regression_section.style.visibility = 'hidden';
+            }
+            if (pred_elem.innerHTML == 'Solar') {
+                button_predict_reg.className = 'button button_solar';
+                regression_section.style.visibility = 'visible';
+                pred_elem.innerHTML = `${pred_elem.innerHTML} ☀️`;
+            }
+            if (pred_elem.innerHTML == 'Wind') {
+                button_predict_reg.className = 'button button_wind';
+            
+                regression_section.style.visibility = 'visible';
+                
+                pred_elem.innerHTML = `${pred_elem.innerHTML} 💨`;
+
+            }
+            
+        });
+        observer_class_pred.observe(pred_elem, {childList: true});
 
         var map = L.map('map', {
             center: [-40, -65],
@@ -141,6 +184,8 @@
         map.addEventListener('click', function(ev) {
             lat = ev.latlng.lat;
             lng = ev.latlng.lng;
+            lat_pinned.innerHTML = ` (📌${lat.toFixed(4)})`
+            lng_pinned.innerHTML = ` (📌${lng.toFixed(4)})`
             if (marker !== null) {
                 map.removeLayer(marker);
             }            

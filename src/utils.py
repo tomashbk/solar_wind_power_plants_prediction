@@ -293,9 +293,23 @@ def fetch_data_latitude_longitude_for_classification(latitude, longitude):
 
 def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw):
     year_to_fetch_data = datetime.datetime.now().year-1
-    
-    url_parameters = ["ALLSKY_SFC_SW_DWN",
-                        "CLRSKY_SFC_SW_DWN",
+    hours_in_a_year = 365*24
+
+    # url_parameters = ["ALLSKY_SFC_SW_DWN",
+    #                     "CLRSKY_SFC_SW_DWN",
+    #                 ] 
+    url_parameters = [  
+                        'ALLSKY_SFC_LW_UP',
+                        'T2M',
+                        'ALLSKY_SFC_SW_UP',
+                        'ALLSKY_SFC_SW_DWN',
+                        'CLRSKY_SFC_SW_UP',
+                        'CLRSKY_SFC_SW_DWN',
+                        'ALLSKY_SFC_SW_DNI',
+                        'CLRSKY_SFC_SW_DNI',
+                        'ALLSKY_SFC_SW_UP_MAX',
+                        'ALLSKY_SFC_SW_DIFF',
+                        'CLRSKY_SFC_SW_DIFF',
                     ]
     # columns_to_drop = [
     #                     'capacity_mw',
@@ -355,9 +369,56 @@ def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_m
     
     df_response['capacity_mw'] = capacity_mw
 
-    columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude')
+    # columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude')
     
-    df_response = df_response.loc[:,~columns_delete]
+    columns_keep = [
+                        'capacity_mw', 
+                        'autumn_ALLSKY_SFC_LW_UP',
+                        'winter_ALLSKY_SFC_LW_UP', 
+                        'winter_T2M', 
+                        'autumn_T2M',
+                        'spring_ALLSKY_SFC_SW_UP', 
+                        'ANN_ALLSKY_SFC_LW_UP',
+                        'ANN_ALLSKY_SFC_SW_DWN', 
+                        'winter_ALLSKY_SFC_SW_UP',
+                        'autumn_ALLSKY_SFC_SW_DWN', 
+                        'spring_CLRSKY_SFC_SW_UP', 
+                        'ANN_T2M',
+                        'autumn_ALLSKY_SFC_SW_UP', 
+                        'ANN_ALLSKY_SFC_SW_UP',
+                        'ANN_CLRSKY_SFC_SW_DWN', 
+                        'spring_ALLSKY_SFC_SW_DWN',
+                        'ANN_ALLSKY_SFC_SW_DNI', 
+                        'autumn_ALLSKY_SFC_SW_DNI',
+                        'spring_CLRSKY_SFC_SW_DNI', 
+                        'spring_CLRSKY_SFC_SW_DWN',
+                        'summer_CLRSKY_SFC_SW_DWN', 
+                        'spring_ALLSKY_SFC_SW_DNI',
+                        'winter_CLRSKY_SFC_SW_UP', 
+                        'winter_ALLSKY_SFC_SW_DWN',
+                        'summer_ALLSKY_SFC_SW_DWN', 
+                        'summer_T2M', 
+                        'winter_CLRSKY_SFC_SW_DWN',
+                        'summer_ALLSKY_SFC_LW_UP', 
+                        'spring_ALLSKY_SFC_SW_UP_MAX',
+                        'summer_ALLSKY_SFC_SW_DNI', 
+                        'summer_CLRSKY_SFC_SW_DNI',
+                        'ANN_CLRSKY_SFC_SW_UP', 
+                        'winter_ALLSKY_SFC_SW_UP_MAX',
+                        'autumn_CLRSKY_SFC_SW_UP', 
+                        'winter_ALLSKY_SFC_SW_DNI',
+                        'ANN_CLRSKY_SFC_SW_DNI', 
+                        'autumn_ALLSKY_SFC_SW_DIFF',
+                        'autumn_CLRSKY_SFC_SW_DIFF', 
+                        'autumn_CLRSKY_SFC_SW_DWN', 
+                        'spring_T2M',
+                        'spring_ALLSKY_SFC_LW_UP', 
+                        'winter_ALLSKY_SFC_SW_DIFF',
+                        'autumn_ALLSKY_SFC_SW_UP_MAX'
+                    ]
+
+    # df_response = df_response.loc[:,~columns_delete]
+    df_response = df_response.loc[:,columns_keep]
     df_response = df_response.reindex(sorted(df_response.columns), axis=1)
     return df_response
 

@@ -14,6 +14,7 @@ import urllib3
 import numpy as np
 import pandas as pd
 import pyhere
+from time import sleep
 
 @click.command()
 # @click.argument('input_filepath', type=click.Path(exists=True))
@@ -68,28 +69,26 @@ def main():
 
     # T2M                   Temperature at 2 Meters
     
-    import os, json, requests
-    from io import StringIO
-    import certifi
-    import urllib3
-    from time import sleep
+    # CLOUD_AMT_DAY         The average percent of cloud amount during daylight.
+    
     
     index_reference = 0
     rows_chunk = 60
     seconds_to_sleep = 2
     url_parameters = ["ALLSKY_SFC_SW_DWN",
                         "CLRSKY_SFC_SW_DWN",
-                        "ALLSKY_SFC_SW_DIFF",
+                        # "ALLSKY_SFC_SW_DIFF",
                         "ALLSKY_SFC_SW_UP",
-                        "ALLSKY_SFC_LW_DWN",
-                        "ALLSKY_SFC_LW_UP",
+                        # "ALLSKY_SFC_LW_DWN",
+                        # "ALLSKY_SFC_LW_UP",
                         "ALLSKY_SFC_SW_DNI",
                         # "ALLSKY_SFC_SW_DNI_MAX_RD",
                         "ALLSKY_SFC_SW_UP_MAX",
-                        "CLRSKY_SFC_SW_DIFF",
+                        # "CLRSKY_SFC_SW_DIFF",
                         "CLRSKY_SFC_SW_DNI",
                         "CLRSKY_SFC_SW_UP",
                         #"ALLSKY_KT",
+                        "CLOUD_AMT_DAY",
                         "WS10M_MAX_AVG",
                         "WS50M_MAX_AVG",
                         "WS50M",
@@ -98,9 +97,23 @@ def main():
                         "WS10M_RANGE_AVG",
                         "T2M"
                     ]
+    ORDINAL_COLUMNS =   [
+                '1st(min)',
+                '2nd',
+                '3rd',
+                '4th',
+                '5th',
+                '6th',
+                '7th',
+                '8th',
+                '9th',
+                '10th',
+                '11th',
+                '12th(max)'
+            ]
     while index_reference + rows_chunk <= (max_index_csv_power_plants - 1):
         try:
-            df_transformed_data_combined_with_nasa = pd.read_csv(utils.DIR_DATA_EXTERNAL/"v5_transformed_data_combined_with_nasa.csv", index_col=['index'] )
+            df_transformed_data_combined_with_nasa = pd.read_csv(utils.DIR_DATA_EXTERNAL/"v7_transformed_data_combined_with_nasa.csv", index_col=['index'] )
             index_reference = df_transformed_data_combined_with_nasa.index.max() + 1
         except FileNotFoundError: 
             pass
@@ -131,24 +144,37 @@ def main():
     
         aux_counter_index = index_reference
     
-        filename_template = "v5_transformed_data_combined_with_nasa.csv"
+        filename_template = "v7_transformed_data_combined_with_nasa.csv"
         filename = filename_template
         for latitude, longitude in locations:
             api_request_url = base_url.format(longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters))
-            response = http.request('GET', api_request_url, timeout=30.00).data.decode('utf-8')
-            df_response_aux = pd.read_csv(StringIO(response))
+            response = http.request('GET', api_request_url, timeout=30.00, retries=urllib3.util.Retry(total=5, backoff_factor=1, status_forcelist=[504]))
+            
+            response_data = response.data.decode('utf-8')
+            df_response_aux = pd.read_csv(StringIO(response_data))
             df_response_aux["latitude"] = latitude
             df_response_aux["longitude"] = longitude
             # print(df_response_aux)
-            if longitude > 0:
-                hemisphere_months_seasons = utils.NORTH_HEMISPHERE_MONTHS_SEASONS
-            else:
-                hemisphere_months_seasons = utils.SOUTH_HEMISPHERE_MONTHS_SEASONS
-            for index, element in hemisphere_months_seasons.items():
-                df_response_aux[index]= df_response_aux[element].mean(axis=1)
+            # if longitude > 0:
+            #     hemisphere_months_seasons = utils.NORTH_HEMISPHERE_MONTHS_SEASONS
+            # else:
+            #     hemisphere_months_seasons = utils.SOUTH_HEMISPHERE_MONTHS_SEASONS
+            # for index, element in hemisphere_months_seasons.items():
+            #     df_response_aux[index]= df_response_aux[element].mean(axis=1)
     
-            df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
+            # df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
 
+            series_sorted_values_by_column = df_response_aux[utils.MONTHS_OF_YEAR].apply(lambda row: row.sort_values().values, axis=1)
+            df_aux_statistics = pd.DataFrame(series_sorted_values_by_column.values.tolist(), columns=ORDINAL_COLUMNS)
+            df_aux_statistics['mean'] = np.around(df_aux_statistics[ORDINAL_COLUMNS].mean(axis=1),3)
+            df_aux_statistics['std'] = np.around(df_aux_statistics[ORDINAL_COLUMNS].std(axis=1),3)
+            df_aux_statistics['median'] = (df_aux_statistics['6th'] + df_aux_statistics['7th']) / 2
+            df_aux_statistics['min'] = df_aux_statistics['1st(min)']
+            df_aux_statistics['max'] = df_aux_statistics['12th(max)']
+            df_aux_statistics.drop(columns= ORDINAL_COLUMNS, inplace = True)
+
+            df_response_aux = pd.concat([df_response_aux, df_aux_statistics], axis=1)
+            df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
             # "PIVAT! PIVAT! PIVAT!"
             df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
             df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
@@ -179,7 +205,8 @@ def main():
         df_response.to_csv(utils.DIR_DATA_EXTERNAL/filename, index_label='index')
         del df_response
         del df_response_aux
-        print("Sleeping...")
+        
+        logger.info('Sleeping...')
         sleep(seconds_to_sleep)
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

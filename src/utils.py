@@ -7,8 +7,8 @@ import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, classification_report
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, classification_report, r2_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold, validation_curve, learning_curve, cross_validate
 
 import certifi
 import urllib3
@@ -422,3 +422,131 @@ def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_m
     df_response = df_response.reindex(sorted(df_response.columns), axis=1)
     return df_response
 
+def validation_curve_plot(plot_title, model, X, y, param_name, param_range):
+    train_scores, test_scores = validation_curve(
+            model,
+            X,
+            y,
+            param_name = param_name,
+            param_range = param_range,
+            cv = 5
+        )
+        
+    np.mean(train_scores, axis=1)
+    
+    plt.figure(figsize=(15,5))
+    plt.plot(np.mean(train_scores, axis=1),
+        label = "Training Score", color = 'b')
+    plt.plot(np.mean(test_scores, axis=1),
+    label = "Cross Validation Score", color = 'g')
+    plt.xticks(np.arange(param_range.shape[0]), param_range)
+    plt.title(plot_title)
+    plt.legend()
+
+def learning_curve_plot(plot_title, model_with_hp, X, y):
+    lc = learning_curve(model_with_hp, X, y, cv=5)
+    samples, train, test = lc[0], lc[1], lc[2]
+    
+    plt.figure(figsize=(15,5))
+    plt.plot(samples, np.mean(train, axis=1),
+        label = "Training Score", color = 'b')
+    plt.plot(samples, np.mean(test, axis=1),
+    label = "Cross Validation Score", color = 'g')
+    plt.title(plot_title)
+    plt.legend()
+
+
+# def performance_metrics(y_true, y_pred, dataset_type):
+def performance_metrics_cross_val(X, y, model_with_hp, dataset_type):
+    results = cross_validate(
+        model_with_hp,
+        X, 
+        y, 
+        cv=5, 
+        scoring=(
+            'r2', 
+            'neg_mean_squared_error', 
+            'neg_mean_absolute_error',
+            'neg_root_mean_squared_error')
+    )
+
+    dict_results = {}
+    for i, val in results.items():
+        if 'test' in i:
+            if 'neg' in i:
+                dict_results[i.replace("neg_", "")] = -np.mean(val)
+
+                # if 'mean_squared_error' in i:
+                #     dict_results['test_root_mean_squared_error'] = np.sqrt(-np.mean(val))
+            else:
+                dict_results[i] = np.mean(val)
+    return dict_results
+    # cross_val_score(lasso, X, y, cv=5)
+    # cross_val_score(nb_model_1, X, y, cv=StratifiedKFold(shuffle = True))
+    # r2 = r2_score(y_true, y_pred)
+    # mse = mean_squared_error(y_true, y_pred)
+    # rmse = np.sqrt(mse) 
+    # mae = mean_absolute_error(y_true, y_pred)
+    # return pd.DataFrame({'metrica': ['R2', 'MSE', 'RMSE', 'MAE'],
+    #                      'valor':[r2, mse, rmse, mae],
+    #                      'dataset_type':dataset_type})
+                         
+    
+def coef_summary(results):
+    '''
+    Toma los resultado del modelo de OLS 
+    
+    Elimina el intercepto.
+    '''
+    # Creo un dataframe de los resultados del summary 
+    coef_df = pd.DataFrame(results.summary().tables[1].data)
+    
+    # Agrego el nombre de las columnas
+    coef_df.columns = coef_df.iloc[0]
+
+    # Elimino la fila extra del intercepto
+    coef_df=coef_df.drop(0)
+
+    # Seteo el nombre de las variables como index
+    coef_df = coef_df.set_index(coef_df.columns[0])
+
+    # Convertimos a float los object 
+    coef_df = coef_df.astype(float)
+
+    # Obtenemos el error; (coef - limite inferior del IC)
+    errors = coef_df['coef'] - coef_df['[0.025']
+    
+    # Agregamos los errores al dataframe
+    coef_df['errors'] = errors
+
+    # Eliminamos la variable const
+    coef_df = coef_df.drop(['const'])
+
+    # Ordenamos los coeficientes 
+    coef_df = coef_df.sort_values(by=['coef'])
+
+    ### Graficamos ###
+
+    # x-labels
+    variables = list(coef_df.index.values)
+    
+    # Agregamos la columna con el nombre de las variables
+    coef_df['variables'] = variables
+   
+    return  coef_df
+
+    
+def adjusted_r2(X, y_true, y_pred):   
+    print((1-(1-r2_score(y_true, y_pred))*((len(X)-1))/(len(X)-len(X.columns)-1)))
+
+def generate_results_dataset(preds, ci):
+    df = pd.DataFrame()
+    df['prediction'] = preds
+    if ci >= 0:
+        df['upper'] = preds + ci
+        df['lower'] = preds - ci
+    else:
+        df['upper'] = preds - ci
+        df['lower'] = preds + ci
+        
+    return df

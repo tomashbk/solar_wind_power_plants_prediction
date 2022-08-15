@@ -68,12 +68,12 @@ def get_accuracy_tree(type, max_leaf_nodes, X_train, X_test, y_train, y_test):
     if type == "classifier":
         model = DecisionTreeClassifier(max_leaf_nodes = max_leaf_nodes, random_state=0)
         model.fit(X_train, y_train)
-        preds_val = model.predict(X_test)
-        score = accuracy_score(y_test, preds_val)
+        # preds_val = model.predict(X_test)
+        # score = accuracy_score(y_test, preds_val)
+        score = model.score(X_test, y_test)
     if type == "regression":
         model = DecisionTreeRegressor(max_leaf_nodes = max_leaf_nodes, random_state=0)
         model.fit(X_train, y_train)
-        # preds_val = model.predict(X_test)
         score = model.score(X_test, y_test)
     
 
@@ -152,12 +152,15 @@ def custom_classification_prediction_report(model, X, y, X_test, y_test, list_ta
     Function to show a custom report of a classification prediction.
     It includes the accuracy score, a cross validation score, the classification_report from sklearn, and a Confusion Matrix.
     """
-    y_pred = model.predict(X_test)
-    print(f'{np.around(model.score(X_test, y_test) * 100, 2)}%')
     # If data is unordered in nature (i.e. non - Time series) then shuffle = True is right choice.
     results_cvs = cross_val_score(model, X, y, cv=StratifiedKFold(shuffle = True))
+    print('Cross validation:')
     print(f'{np.around(results_cvs * 100, 2)}(%)')
     print(f'Mean: {np.around(results_cvs.mean() * 100, 2)}%, Standard Deviation: {np.around(results_cvs.std() * 100, 2)}%')
+    
+    print('Hold Out:')
+    y_pred = model.predict(X_test)
+    print(f'{np.around(model.score(X_test, y_test) * 100, 2)}%')
     print(classification_report(y_test, y_pred, target_names=list_target_in_order))
     confusion_matrix_return = confusion_matrix(y_test, y_pred)
     sns.heatmap(confusion_matrix_return, annot=True, fmt = 'g')

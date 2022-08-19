@@ -136,11 +136,9 @@ def balancing_data_more_than_1000(dataframe, target_column):
     """
     Function to balance data if the target with less samples is more than 1000.
     """
-    target_with_less_value = dataframe[[target_column]].value_counts().sort_values().index[0][0]
     value_of_target_with_less_value = dataframe[[target_column]].value_counts().sort_values()[0]
     dict_outbalanced_targets_values = dataframe[[target_column]].value_counts().sort_values()[1:].to_dict()
 
-    dict_outbalanced_targets_values
     if(value_of_target_with_less_value > 1000):
         for key_tuple, value in dict_outbalanced_targets_values.items():
             difference = (value - value_of_target_with_less_value)

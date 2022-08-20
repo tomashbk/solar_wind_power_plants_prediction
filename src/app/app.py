@@ -19,7 +19,7 @@ def predict():
     if request.form.get("type") == 'classification':
         latitude = float(request.form.get("latitude"))
         longitude = float(request.form.get("longitude"))
-        model = joblib.load(utils.DIR_MODELS/"xgbclass_model_1.pkl")
+        model = joblib.load(utils.DIR_MODELS/"rf_model2.pkl")
         df_classification_y_real_values = pd.read_csv(utils.DIR_DATA_PROCESSED/"classification_y_real_values.csv", index_col=0)
         results_lat_lon = utils.fetch_data_latitude_longitude_for_classification(latitude, longitude)
         int_prediction = int(model.predict(results_lat_lon))

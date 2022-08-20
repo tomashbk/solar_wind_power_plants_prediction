@@ -162,7 +162,6 @@ def main():
             # for index, element in hemisphere_months_seasons.items():
             #     df_response_aux[index]= df_response_aux[element].mean(axis=1)
     
-            # df_response_aux.drop(columns= utils.MONTHS_OF_YEAR, inplace = True)
 
             series_sorted_values_by_column = df_response_aux[utils.MONTHS_OF_YEAR].apply(lambda row: row.sort_values().values, axis=1)
             df_aux_statistics = pd.DataFrame(series_sorted_values_by_column.values.tolist(), columns=ORDINAL_COLUMNS)

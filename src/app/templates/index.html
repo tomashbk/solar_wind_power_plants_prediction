@@ -103,6 +103,19 @@
         #regression_section{
             visibility: hidden;
         }
+        .loader {
+            border: .5em solid #f3f3f3; /* Light grey */
+            border-top: .5em solid #ED7D31; /* Blue */
+            border-radius: 50%;
+            width: 1.5em;
+            height: 1.5em;
+            animation: spin .8s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <!-- <link rel='stylesheet' type='text/css' media='screen' href='main.css'> -->
     <!-- <script src='main.js'></script> -->
@@ -118,16 +131,26 @@
         
         <p><strong>Lat: </strong><span id="lat_elem"></span><span id="lat_pinned"></span></p>
         <p><strong>Lng: </strong><span id="lng_elem"></span><span id="lng_pinned"></span></p>
-        <p><strong>Prediction: </strong><span id="pred_elem"></span></p>
+        <p><strong>Generador: </strong>
+            <div class="loader" id="loader_category"></div>
+            <div id="pred_elem"></div>
+        </p>
+        <!-- <p><strong>Prediction: </strong><span id="pred_elem"></span></p> -->
 
         <div id="regression_section">
+            <p><strong>Capacidad (MW): </strong><span id="capacity_mw"></span></p>
+            <!-- <p><strong>Capacity (MW): </strong><span id="capacity_mw"></span></p> -->
             <div class="slidecontainer">
-                <input type="range" min="1" max="50" value="1" id="myRange">
+                <input type="range" min="1" max="1" value="1" id="myRange">
             </div>
             
-            <div id="capacity_mw"></div>
-            <button id="button_predict_reg" class="button" type="submit">Predict estimated generation</button>
-            <p><strong>Prediction: </strong><span id="pred_elem2"></span></p>
+            <button id="button_predict_reg" class="button" type="submit">Predecir generación anual</button>
+            <!-- <button id="button_predict_reg" class="button" type="submit">Predict estimated anual generation</button> -->
+            <!-- <p><strong>Prediction: </strong><span id="pred_elem2"></span></p> -->
+            <p><strong>Generación anual estimada: </strong>
+                <div class="loader" id="loader_generation"></div>
+                <div id="pred_elem2"></div>
+            </p>
         </div>
     </div>
     
@@ -147,24 +170,30 @@
         var button_predict_reg = document.querySelector('#button_predict_reg');
         var slider = document.querySelector('#myRange');
         var capacity_mw = document.querySelector('#capacity_mw');
+        var loader_category = document.querySelector('#loader_category');
+        var loader_generation = document.querySelector('#loader_generation');
 
         observer_class_pred = new MutationObserver(function(mutationsList, observer) {
             console.log(mutationsList);
             console.log(observer);
             if (pred_elem.innerHTML == 'Other') {
                 regression_section.style.visibility = 'hidden';
+                pred_elem.innerHTML = `Ninguno ❌`;
+
             }
             if (pred_elem.innerHTML == 'Solar') {
                 button_predict_reg.className = 'button button_solar';
                 regression_section.style.visibility = 'visible';
-                pred_elem.innerHTML = `${pred_elem.innerHTML} ☀️`;
+                pred_elem.innerHTML = `Fotovoltaico ☀️`;
+                // pred_elem.innerHTML = `${pred_elem.innerHTML} ☀️`;
             }
             if (pred_elem.innerHTML == 'Wind') {
                 button_predict_reg.className = 'button button_wind';
             
                 regression_section.style.visibility = 'visible';
                 
-                pred_elem.innerHTML = `${pred_elem.innerHTML} 💨`;
+                pred_elem.innerHTML = `Eólico 💨`;
+                // pred_elem.innerHTML = `${pred_elem.innerHTML} 💨`;
 
             }
             
@@ -202,10 +231,26 @@
                 type: 'POST',  // http method
                 data: data,  // data to submit
                 beforeSend: function() {
-                    pred_elem.innerHTML = "Processing..."
+                    regression_section.style.visibility = 'hidden';
+                    loader_category.style.display = "block";                    
+                    loader_generation.style.display = "none";
+                    pred_elem.innerHTML = "";
+                    // pred_elem.innerHTML = "Procesando...";
+                    // pred_elem.innerHTML = "Processing...";
+                    pred_elem2.innerHTML = "";
+                    capacity_mw.innerHTML = "";
                 },
                 success: function (response, status, xhr) {
-                    pred_elem.innerHTML = response
+                    
+                    loader_category.style.display = "none";
+                    if(response.result != 'Other'){
+                        slider.max = JSON.parse(response.capacity_min_max)[0]['max_capacity'];
+                        slider.min = JSON.parse(response.capacity_min_max)[0]['min_capacity'];
+                        slider.value = slider.min;
+                        capacity_mw.innerHTML = slider.min;
+                    }
+                    pred_elem.innerHTML = response.result;
+                    
                     // $('p').append('status: ' + status + ', data: ' + data);
                 },
                 error: function (jqXhr, textStatus, errorMessage) {
@@ -219,6 +264,11 @@
         });
 
         button_predict_reg.addEventListener('click', function(ev) {
+            if(this.classList.contains('button_wind')){
+                category = 'wind'
+            }else if (this.classList.contains('button_solar')){
+                category = 'solar'
+            }
             lat = parseFloat(lat_elem.innerHTML);
             lng = parseFloat(lng_elem.innerHTML);
             capacity_mw_value = capacity_mw.innerHTML;
@@ -230,7 +280,8 @@
                     'latitude': lat.toFixed(4),
                     'longitude': lng.toFixed(4),
                     'capacity_mw': capacity_mw_value,
-                    'type': 'regression'
+                    'type': 'regression',
+                    'category': category
              };
             console.log(data);
             
@@ -239,10 +290,14 @@
                 type: 'POST',  // http method
                 data: data,  // data to submit
                 beforeSend: function() {
-                    pred_elem2.innerHTML = "Processing..."
+                    
+                    loader_generation.style.display = "block";
+                    // pred_elem2.innerHTML = "Procesando..."
+                    // pred_elem2.innerHTML = "Processing..."
                 },
                 success: function (response, status, xhr) {
-                    pred_elem2.innerHTML = response
+                    loader_generation.style.display = "none";
+                    pred_elem2.innerHTML = response.result;
                     // $('p').append('status: ' + status + ', data: ' + data);
                 },
                 error: function (jqXhr, textStatus, errorMessage) {

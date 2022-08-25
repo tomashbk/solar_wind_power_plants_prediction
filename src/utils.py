@@ -320,39 +320,47 @@ def fetch_data_latitude_longitude_for_classification(latitude, longitude):
     return df_response
 
 
-def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw):
+def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw, category):
     year_to_fetch_data = datetime.datetime.now().year-1
     hours_in_a_year = 365*24
 
-    # url_parameters = ["ALLSKY_SFC_SW_DWN",
-    #                     "CLRSKY_SFC_SW_DWN",
-    #                 ] 
-    url_parameters = [  
-                        'ALLSKY_SFC_LW_UP',
-                        'T2M',
-                        'ALLSKY_SFC_SW_UP',
-                        'ALLSKY_SFC_SW_DWN',
-                        'CLRSKY_SFC_SW_UP',
-                        'CLRSKY_SFC_SW_DWN',
-                        'ALLSKY_SFC_SW_DNI',
-                        'CLRSKY_SFC_SW_DNI',
-                        'ALLSKY_SFC_SW_UP_MAX',
-                        'ALLSKY_SFC_SW_DIFF',
-                        'CLRSKY_SFC_SW_DIFF',
+    url_parameters = ["ALLSKY_SFC_SW_DWN",
+                        "CLRSKY_SFC_SW_DWN",
+                        # "ALLSKY_SFC_SW_DIFF",
+                        "ALLSKY_SFC_SW_UP",
+                        # "ALLSKY_SFC_LW_DWN",
+                        # "ALLSKY_SFC_LW_UP",
+                        "ALLSKY_SFC_SW_DNI",
+                        # "ALLSKY_SFC_SW_DNI_MAX_RD",
+                        "ALLSKY_SFC_SW_UP_MAX",
+                        # "CLRSKY_SFC_SW_DIFF",
+                        "CLRSKY_SFC_SW_DNI",
+                        "CLRSKY_SFC_SW_UP",
+                        #"ALLSKY_KT",
+                        "CLOUD_AMT_DAY",
+                        "WS10M_MAX_AVG",
+                        "WS50M_MAX_AVG",
+                        "WS50M",
+                        "WS50M_RANGE_AVG",
+                        "WS10M",
+                        "WS10M_RANGE_AVG",
+                        "T2M"
                     ]
-    # columns_to_drop = [
-    #                     'capacity_mw',
-    #                     'latitude',
-    #                     'longitude',
-    #                     'primary_fuel_transformed',
-    #                     'generation_gwh_2013',
-    #                     'generation_gwh_2014',
-    #                     'generation_gwh_2015',
-    #                     'generation_gwh_2016',
-    #                     'generation_gwh_2017',
-    #                     'generation_gwh_2018',
-    #                     'generation_gwh_2019'
-    #                 ]
+                    
+    ORDINAL_COLUMNS =   [
+                            '1st(min)',
+                            '2nd',
+                            '3rd',
+                            '4th',
+                            '5th',
+                            '6th',
+                            '7th',
+                            '8th',
+                            '9th',
+                            '10th',
+                            '11th',
+                            '12th(max)'
+                        ]
 
     base_url = r"https://power.larc.nasa.gov/api/temporal/monthly/point?parameters={url_parameters}&community=RE&longitude={longitude}&latitude={latitude}&start={year_to_fetch_data}&end={year_to_fetch_data}&format=CSV&header=false"
     df_response = pd.DataFrame()
@@ -362,21 +370,32 @@ def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_m
         ca_certs=certifi.where()
     )
 
-    api_request_url = base_url.format(longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters), year_to_fetch_data=year_to_fetch_data)
-    response = http.request('GET', api_request_url, timeout=30.00).data.decode('utf-8')
-    df_response_aux = pd.read_csv(StringIO(response))
+    api_request_url = base_url.format(year_to_fetch_data=year_to_fetch_data, longitude=longitude, latitude=latitude, url_parameters=','.join(url_parameters))
+    response = http.request('GET', api_request_url, timeout=30.00, retries=urllib3.util.Retry(total=5, backoff_factor=1, status_forcelist=[504]))
+    response_data = response.data.decode('utf-8')
+    df_response_aux = pd.read_csv(StringIO(response_data))
     df_response_aux["latitude"] = latitude
     df_response_aux["longitude"] = longitude
     # print(df_response_aux)
-    if longitude > 0:
-        hemisphere_months_seasons = NORTH_HEMISPHERE_MONTHS_SEASONS
-    else:
-        hemisphere_months_seasons = SOUTH_HEMISPHERE_MONTHS_SEASONS
-    for index, element in hemisphere_months_seasons.items():
-        df_response_aux[index]= df_response_aux[element].mean(axis=1)
+    # if longitude > 0:
+    #     hemisphere_months_seasons = NORTH_HEMISPHERE_MONTHS_SEASONS
+    # else:
+    #     hemisphere_months_seasons = SOUTH_HEMISPHERE_MONTHS_SEASONS
+    # for index, element in hemisphere_months_seasons.items():
+    #     df_response_aux[index]= df_response_aux[element].mean(axis=1)
 
+    series_sorted_values_by_column = df_response_aux[MONTHS_OF_YEAR].apply(lambda row: row.sort_values().values, axis=1)
+    df_aux_statistics = pd.DataFrame(series_sorted_values_by_column.values.tolist(), columns=ORDINAL_COLUMNS)
+    # df_aux_statistics['mean'] = np.around(df_aux_statistics[ORDINAL_COLUMNS].mean(axis=1),3)
+    df_aux_statistics['std'] = np.around(df_aux_statistics[ORDINAL_COLUMNS].std(axis=1),3)
+    df_aux_statistics['median'] = (df_aux_statistics['6th'] + df_aux_statistics['7th']) / 2
+    df_aux_statistics['min'] = df_aux_statistics['1st(min)']
+    df_aux_statistics['max'] = df_aux_statistics['12th(max)']
+
+    df_aux_statistics.drop(columns= ORDINAL_COLUMNS, inplace = True)
+    df_response_aux = pd.concat([df_response_aux, df_aux_statistics], axis=1)
     df_response_aux.drop(columns= MONTHS_OF_YEAR, inplace = True)
-
+    
     # "PIVAT! PIVAT! PIVAT!"
     df_response_aux = df_response_aux.pivot_table(index=["latitude", "longitude"], columns=["PARAMETER", "YEAR"])
     df_response_aux.columns = ["_".join(map(str, cols)) for cols in df_response_aux.columns.to_flat_index()]
@@ -398,53 +417,55 @@ def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_m
     
     df_response['capacity_mw'] = capacity_mw
 
+
     # columns_delete = df_response.columns.str.contains('latitude') | df_response.columns.str.contains('longitude')
-    
-    columns_keep = [
-                        'capacity_mw', 
-                        'autumn_ALLSKY_SFC_LW_UP',
-                        'winter_ALLSKY_SFC_LW_UP', 
-                        'winter_T2M', 
-                        'autumn_T2M',
-                        'spring_ALLSKY_SFC_SW_UP', 
-                        'ANN_ALLSKY_SFC_LW_UP',
-                        'ANN_ALLSKY_SFC_SW_DWN', 
-                        'winter_ALLSKY_SFC_SW_UP',
-                        'autumn_ALLSKY_SFC_SW_DWN', 
-                        'spring_CLRSKY_SFC_SW_UP', 
-                        'ANN_T2M',
-                        'autumn_ALLSKY_SFC_SW_UP', 
+    if category == 'solar':
+        columns_keep = ['capacity_mw', 
+                        'max_T2M', 
+                        'ANN_ALLSKY_SFC_SW_DWN',
+                        'median_ALLSKY_SFC_SW_DNI', 
                         'ANN_ALLSKY_SFC_SW_UP',
+                        'median_ALLSKY_SFC_SW_UP', 
+                        'median_ALLSKY_SFC_SW_DWN',
+                        'ANN_CLOUD_AMT_DAY', 
                         'ANN_CLRSKY_SFC_SW_DWN', 
-                        'spring_ALLSKY_SFC_SW_DWN',
-                        'ANN_ALLSKY_SFC_SW_DNI', 
-                        'autumn_ALLSKY_SFC_SW_DNI',
-                        'spring_CLRSKY_SFC_SW_DNI', 
-                        'spring_CLRSKY_SFC_SW_DWN',
-                        'summer_CLRSKY_SFC_SW_DWN', 
-                        'spring_ALLSKY_SFC_SW_DNI',
-                        'winter_CLRSKY_SFC_SW_UP', 
-                        'winter_ALLSKY_SFC_SW_DWN',
-                        'summer_ALLSKY_SFC_SW_DWN', 
-                        'summer_T2M', 
-                        'winter_CLRSKY_SFC_SW_DWN',
-                        'summer_ALLSKY_SFC_LW_UP', 
-                        'spring_ALLSKY_SFC_SW_UP_MAX',
-                        'summer_ALLSKY_SFC_SW_DNI', 
-                        'summer_CLRSKY_SFC_SW_DNI',
-                        'ANN_CLRSKY_SFC_SW_UP', 
-                        'winter_ALLSKY_SFC_SW_UP_MAX',
-                        'autumn_CLRSKY_SFC_SW_UP', 
-                        'winter_ALLSKY_SFC_SW_DNI',
+                        'ANN_ALLSKY_SFC_SW_DNI',
+                        'ANN_T2M', 
+                        'median_CLOUD_AMT_DAY', 
+                        'min_CLOUD_AMT_DAY',
+                        'max_ALLSKY_SFC_SW_DWN', 
+                        'median_CLRSKY_SFC_SW_DWN',
+                        'min_CLRSKY_SFC_SW_UP', 
+                        'min_CLRSKY_SFC_SW_DNI', 
+                        'median_T2M',
+                        'max_ALLSKY_SFC_SW_DNI', 
+                        'min_ALLSKY_SFC_SW_UP_MAX',
+                        'min_ALLSKY_SFC_SW_UP', 
+                        'min_CLRSKY_SFC_SW_DWN', 
+                        'max_ALLSKY_SFC_SW_UP',
+                        'median_CLRSKY_SFC_SW_UP', 
+                        'ANN_CLRSKY_SFC_SW_UP',
                         'ANN_CLRSKY_SFC_SW_DNI', 
-                        'autumn_ALLSKY_SFC_SW_DIFF',
-                        'autumn_CLRSKY_SFC_SW_DIFF', 
-                        'autumn_CLRSKY_SFC_SW_DWN', 
-                        'spring_T2M',
-                        'spring_ALLSKY_SFC_LW_UP', 
-                        'winter_ALLSKY_SFC_SW_DIFF',
-                        'autumn_ALLSKY_SFC_SW_UP_MAX'
-                    ]
+                        'min_ALLSKY_SFC_SW_DWN',
+                        'median_CLRSKY_SFC_SW_DNI', 
+                        'min_T2M', 
+                        'median_ALLSKY_SFC_SW_UP_MAX',
+                        'std_ALLSKY_SFC_SW_UP', 
+                        'std_CLOUD_AMT_DAY', 
+                        'max_CLRSKY_SFC_SW_DNI',
+                        'min_ALLSKY_SFC_SW_DNI', 
+                        'max_CLRSKY_SFC_SW_DWN',
+                        'std_ALLSKY_SFC_SW_DNI', 
+                        'max_CLOUD_AMT_DAY'
+                        ]
+
+    if category == 'wind':
+        columns_keep = ['capacity_mw', 
+                        'std_CLRSKY_SFC_SW_DWN', 
+                        'ANN_T2M',
+                        'max_T2M', 
+                        'std_CLRSKY_SFC_SW_DNI'
+                        ]
 
     # df_response = df_response.loc[:,~columns_delete]
     df_response = df_response.loc[:,columns_keep]

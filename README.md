@@ -1,19 +1,20 @@
 Solar PV and Wind Power Plants Prediction
 ==============================
 
-(This is still a work in progress. However, at this stage of the development it is already functional).
+A Data Science Project to predict if a certain location in the World is convenient or not to install a Solar PV or Wind Power Plant according to climatic factors of that location, and to predict its anual generation with 90% of confidence.
 
-A web application to predict if a certain location in the World is convenient or not to install a Solar PV or Wind Power Plant according to climatic factors of that location.
+This project was presented for the Data Science Diploma course at **Instituto Data Science** (https://institutodatascience.org/)
 
-![Map Solar USA](/reports/figures/img_readme/usa_solar.jpg)
+This project has the code to manipulate the data, building models and to deploy in a web application.
 
-![Map Wind Arg](/reports/figures/img_readme/arg_wind.jpg)
+<!-- ![Map Solar USA](/reports/figures/img_readme/usa_solar.jpg) -->
+
+<!-- ![Map Wind Arg](/reports/figures/img_readme/arg_wind.jpg) -->
 
 The dataset used to train the model is the **Global Power Plant Database** from **World Resources Institute** (https://www.wri.org/) in combination of data from **NASA Prediction Of Worldwide Energy Resources (POWER)** (https://power.larc.nasa.gov/).
 
-The algorithm chosen for it had the best accuracy of all tried is a XGBoost Classifier.
 
-![XGBoost Classification Report](/reports/figures/img_readme/class_report.jpg)
+<!-- ![XGBoost Classification Report](/reports/figures/img_readme/class_report.jpg) -->
 
 ## Web Application
 - `src/app/app.py`
@@ -21,7 +22,9 @@ The algorithm chosen for it had the best accuracy of all tried is a XGBoost Clas
 ## Data manipulation and model deploy
 1. `notebooks/1-EDA-modif-GPPD.ipynb`
 2. `src/data/2-make_dataset.py`
-3. `notebooks/3-Analysis-and-modeling.ipynb`
+3. `notebooks/3-classification.ipynb`
+4. `notebooks/4-regressions_generation_solar.ipynb`
+5. `notebooks/5-regressions_generation_wind.ipynb`
 
 ## Model
 - `models/xgbclass_model_1.pkl`

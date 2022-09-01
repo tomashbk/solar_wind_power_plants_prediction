@@ -36,7 +36,6 @@ def predict():
         longitude = float(request.form.get("longitude"))
         capacity_mw = int(request.form.get("capacity_mw"))
         category = request.form.get("category")
-        # model = joblib.load(utils.DIR_MODELS/"knn_model_regressor.pkl")
         if category == 'wind':
             model = joblib.load(utils.DIR_MODELS/"wind_rf_model_regressor.pkl")
             model_95 = joblib.load(utils.DIR_MODELS/"wind_qr_model_95.pkl")
@@ -45,10 +44,7 @@ def predict():
             model = joblib.load(utils.DIR_MODELS/"solar_rf_model_regressor.pkl")
             model_95 = joblib.load(utils.DIR_MODELS/"solar_qr_model_95.pkl")
             model_05 = joblib.load(utils.DIR_MODELS/"solar_qr_model_05.pkl")
-        # df_classification_y_real_values = pd.read_csv(utils.DIR_DATA_PROCESSED/"classification_y_real_values.csv", index_col=0)
         results_lat_lon = utils.fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw, category)
-        # int_prediction = int(model.predict(results_lat_lon))
-        # prediction = df_classification_y_real_values.squeeze().to_list()[int_prediction]
         ndarray_prediction = model.predict(results_lat_lon)
         ndarray_max_pred = model_95.predict([ndarray_prediction])
         ndarray_min_pred = model_05.predict([ndarray_prediction])

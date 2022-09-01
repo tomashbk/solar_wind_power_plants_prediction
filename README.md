@@ -26,8 +26,14 @@ The dataset used to train the model is the **Global Power Plant Database** from 
 4. `notebooks/4-regressions_generation_solar.ipynb`
 5. `notebooks/5-regressions_generation_wind.ipynb`
 
-## Model
-- `models/xgbclass_model_1.pkl`
+## Models
+- `models/rf_model2.pkl`
+- `models/solar_rf_model_regressor.pkl`
+- `models/wind_rf_model_regressor.pkl`
+- `models/solar_qr_model_05.pkl`
+- `models/solar_qr_model_95.pkl`
+- `models/wind_qr_model_05.pkl`
+- `models/wind_qr_model_95.pkl`
 
 
 --------

@@ -131,23 +131,23 @@
         
         <p><strong>Lat: </strong><span id="lat_elem"></span><span id="lat_pinned"></span></p>
         <p><strong>Lng: </strong><span id="lng_elem"></span><span id="lng_pinned"></span></p>
-        <p><strong>Generador: </strong>
+        <p><strong>Generator: </strong>
             <div class="loader" id="loader_category"></div>
             <div id="pred_elem"></div>
         </p>
         <!-- <p><strong>Prediction: </strong><span id="pred_elem"></span></p> -->
 
         <div id="regression_section">
-            <p><strong>Capacidad (MW): </strong><span id="capacity_mw"></span></p>
-            <!-- <p><strong>Capacity (MW): </strong><span id="capacity_mw"></span></p> -->
+            <!-- <p><strong>Capacidad (MW): </strong><span id="capacity_mw"></span></p> -->
+            <p><strong>Capacity (MW): </strong><span id="capacity_mw"></span></p>
             <div class="slidecontainer">
                 <input type="range" min="1" max="1" value="1" id="myRange">
             </div>
             
-            <button id="button_predict_reg" class="button" type="submit">Predecir generación anual</button>
-            <!-- <button id="button_predict_reg" class="button" type="submit">Predict estimated anual generation</button> -->
-            <!-- <p><strong>Prediction: </strong><span id="pred_elem2"></span></p> -->
-            <p><strong>Generación anual estimada: </strong>
+            <!-- <button id="button_predict_reg" class="button" type="submit">Predecir generación anual</button> -->
+            <button id="button_predict_reg" class="button" type="submit">Predict annual generation</button>
+            <p><strong>Estimated annual generation: </strong><span id="pred_elem2"></span></p>
+            <!-- <p><strong>Generación anual estimada: </strong> -->
                 <div class="loader" id="loader_generation"></div>
                 <div id="pred_elem2"></div>
             </p>
@@ -178,13 +178,13 @@
             console.log(observer);
             if (pred_elem.innerHTML == 'Other') {
                 regression_section.style.visibility = 'hidden';
-                pred_elem.innerHTML = `Ninguno ❌`;
+                pred_elem.innerHTML = `None ❌`;
 
             }
             if (pred_elem.innerHTML == 'Solar') {
                 button_predict_reg.className = 'button button_solar';
                 regression_section.style.visibility = 'visible';
-                pred_elem.innerHTML = `Fotovoltaico ☀️`;
+                pred_elem.innerHTML = `Solar PV ☀️`;
                 // pred_elem.innerHTML = `${pred_elem.innerHTML} ☀️`;
             }
             if (pred_elem.innerHTML == 'Wind') {
@@ -192,7 +192,7 @@
             
                 regression_section.style.visibility = 'visible';
                 
-                pred_elem.innerHTML = `Eólico 💨`;
+                pred_elem.innerHTML = `Wind 💨`;
                 // pred_elem.innerHTML = `${pred_elem.innerHTML} 💨`;
 
             }

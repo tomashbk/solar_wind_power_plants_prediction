@@ -321,7 +321,7 @@ def fetch_data_latitude_longitude_for_classification(latitude, longitude):
 
 
 def fetch_data_latitude_longitude_for_regression(latitude, longitude, capacity_mw, category):
-    year_to_fetch_data = datetime.datetime.now().year-1
+    year_to_fetch_data = datetime.datetime.now().year-2
     hours_in_a_year = 365*24
 
     url_parameters = ["ALLSKY_SFC_SW_DWN",

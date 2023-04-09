@@ -3,6 +3,10 @@ Solar PV and Wind Power Plants Prediction
 
 A Data Science Project to predict if a certain location in the World is convenient or not to install a Solar PV or Wind Power Plant according to climatic factors of that location, and to predict its anual generation with 90% of confidence.
 
+
+https://user-images.githubusercontent.com/13923319/230788007-7ea1b01b-d623-4180-b53d-4a91a50acb37.mp4
+
+
 This project was presented for the Data Science Diploma course at **Instituto Data Science** (https://institutodatascience.org/)
 
 This project has the code to manipulate the data, building models and to deploy in a web application.
